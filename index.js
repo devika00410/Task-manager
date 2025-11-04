@@ -9,8 +9,14 @@ connectDB();
 
 const app = express();
 
-// CORS middleware
-app.use(cors());
+// CORS middleware - MOVED THIS TO TOP AND FIXED DUPLICATE
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'https://your-frontend-app.onrender.com' 
+  ],
+  credentials: true
+}));
 
 // Body parser middleware
 app.use(express.json());
@@ -29,7 +35,19 @@ app.get('/', (req, res) => {
   });
 });
 
-// Handle undefined routes - FIXED VERSION
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Server is healthy and running',
+    timestamp: new Date().toISOString(),
+    database: 'Connected', 
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
+  });
+});
+
+
 app.use((req, res, next) => {
   res.status(404).json({
     success: false,
@@ -53,5 +71,5 @@ app.listen(PORT, () => {
   console.log(` Server running on port ${PORT}`);
   console.log(` Database: taskmanager_db`);
   console.log(` Environment: ${process.env.NODE_ENV}`);
+  console.log(` Health check: http://localhost:${PORT}/health`);
 });
-
