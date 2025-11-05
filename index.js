@@ -4,12 +4,9 @@ require('dotenv').config();
 
 const connectDB = require('./Config/db');
 
-// Connect to database
-connectDB();
-
 const app = express();
 
-// CORS middleware - MOVED THIS TO TOP AND FIXED DUPLICATE
+// CORS middleware
 app.use(cors({
   origin: [
     'http://localhost:3000',
@@ -22,10 +19,6 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Mount routers
-app.use('/api/auth', require('./Routes/authRoutes'));     
-app.use('/api/tasks', require('./Routes/taskRoutes'));
-
 // Basic route
 app.get('/', (req, res) => {
   res.json({
@@ -35,19 +28,20 @@ app.get('/', (req, res) => {
   });
 });
 
-// Health check endpoint
+// Health check endpoint - SIMPLIFIED
 app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
-    message: 'Server is healthy and running',
-    timestamp: new Date().toISOString(),
-    database: 'Connected', 
-    uptime: process.uptime(),
-    memory: process.memoryUsage()
+    message: 'Server is healthy',
+    timestamp: new Date().toISOString()
   });
 });
 
+// Mount routers
+app.use('/api/auth', require('./Routes/authRoutes'));     
+app.use('/api/tasks', require('./Routes/taskRoutes'));
 
+// Handle undefined routes
 app.use((req, res, next) => {
   res.status(404).json({
     success: false,
@@ -67,9 +61,15 @@ app.use((error, req, res, next) => {
 
 const PORT = process.env.PORT || 8000;
 
-app.listen(PORT, () => {
-  console.log(` Server running on port ${PORT}`);
-  console.log(` Database: taskmanager_db`);
-  console.log(` Environment: ${process.env.NODE_ENV}`);
-  console.log(` Health check: http://localhost:${PORT}/health`);
+// Connect to database and THEN start server
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(` Server running on port ${PORT}`);
+    console.log(` Database: taskmanager_db`);
+    console.log(` Environment: ${process.env.NODE_ENV}`);
+    console.log(` Health check: http://localhost:${PORT}/health`);
+  });
+}).catch(err => {
+  console.error('Failed to connect to database:', err);
+  process.exit(1);
 });
